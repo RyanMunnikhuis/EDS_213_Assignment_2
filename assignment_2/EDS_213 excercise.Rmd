@@ -1,0 +1,127 @@
+---
+title: "Assignment 2"
+author: "Ryan Munnikhuis"
+date: "10/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dataRetrieval)
+library(tidyverse)
+library(metajam)
+library(lubridate)
+```
+Assignment 1.0
+```{r}
+ventura_dis = readNWISdv(
+  iteNumber <- "11118500",
+parameterCd <- "00060",  # Discharge
+startDate <- "1988-10-01", 
+endDate <- "2018-09-30" 
+  
+)
+names(ventura_dis)
+
+temperatureandFlow = readNWISdv(
+  siteNumber = "11118500",
+  parameterCd <- c("00060","00065"),
+  StatCD = c("00001","00003"),
+  startDate = "2012-01-01",
+endDate = "2012-05-01"
+                              )
+
+head(discharge)
+
+ggplot(discharge, aes(x = Date, y = X_00060_00003)) + geom_line()
+```
+
+Assignment 2.0
+```{r}
+data_url = "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3A7fc6f6db-c5ea-426a-a743-1f2edafb43b8"
+
+path = ("C:/Users/rmunn/OneDrive/Documents/MEDS/EDS_213")
+library(metajam)
+data_path = download_d1_data(data_url, path)
+
+data = read_d1_files(data_path)
+
+hh_data = data$data
+```
+
+Assignment 2.1.1
+```{r}
+#Santa Paula Creek
+sp_discharge = readNWISdv(
+  iteNumber <- "11113500",
+parameterCd <- "00060",  # Discharge
+startDate <- "2021-10-01", 
+endDate <- "2021-10-10",
+)
+
+
+```
+Assignment 2.1.2 
+```{r}
+#Querying both the Ventura River and Santa Paula Creek 
+siteNumbers <- c("11118500","11113500") 
+siteINFO <- readNWISsite(siteNumbers)
+
+startdate = as.Date("2021-10-04T00:00")
+enddate = as.Date("2021-10-05T24:00")
+
+#Pulled hourly data for each stream. 
+sp_vent_discharge = readNWISuv(
+  siteNumber = c("11118500", "11113500"),
+  parameterCd = "00060", 
+  startDate = startdate,
+  endDate = enddate,
+  tz = "PST")
+
+```
+
+Assignment 2.1.3 
+```{r}
+# I divided up the data into two separate dataframes for easier management. 
+sp_dis = sp_vent_discharge %>% 
+  filter(site_no == "11113500")
+
+vent_dis = sp_vent_discharge %>% 
+  filter(site_no == "11118500")
+
+#According to the data, peak discharge in the Ventura River was on around 12:00pm to 10am and peak discharge in Santa Paula Creek was around 3:00 am.
+ggplot() +
+  geom_line(data = sp_dis,  aes(x = dateTime, y = X_00060_00000, color = "Santa Paula Creek")) +
+  geom_line(data = vent_dis, aes(x = dateTime, y = X_00060_00000, color = "Ventura River")) + 
+  labs(color = "Rivers",
+        title = "Daily Discharge of the Ventura River and Santa Paula Creek from 2021-10-01 to 2021-10-10",
+       x = "Days",
+       y = "Discharge cm^3/s") +
+  scale_color_manual(values = c("blue", "red"))
+
+
+
+```
+Assignment 2.2
+```{r}
+#Alaska data set
+data_url = "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3A7fc6f6db-c5ea-426a-a743-1f2edafb43b8"
+path = ("C:/Users/rmunn/OneDrive/Documents/MEDS/EDS_213/assignment_2")
+
+
+data_path = download_d1_data(data_url, path)
+ak_data = read_csv(here::here("data", "household_language.csv"))
+
+ak_eng = ak_data %>% 
+  filter(Year >= 2009,
+         Year <= 2015) %>% 
+  group_by(Year) %>% 
+  summarize(english_per = sum(speak_only_english)/sum(total)*100) %>% 
+  summarise(Year, english_per)
+
+ggplot(data = ak_eng, aes(x = Year, y = english_per)) +
+  geom_smooth(se = FALSE) +
+  labs(title = "Percentage of Alaska Residents who spoke only English from 2009-2015", y = "Percent of English Speakers") + theme_minimal()
+
+```
+
